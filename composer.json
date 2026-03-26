@@ -1,0 +1,41 @@
+{
+    "name": "thesis/hot-reload",
+    "description": "Thesis Hot Reload",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "kafkiansky",
+            "email": "vadimzanfir@gmail.com"
+        },
+        {
+            "name": "Valentin Udaltsov",
+            "email": "udaltsov.valentin@gmail.com"
+        },
+        {
+            "name": "Thesis Team",
+            "homepage": "https://github.com/orgs/thesis-php/people"
+        }
+    ],
+    "require": {
+        "php": "^8.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.4",
+        "symfony/var-dumper": "^7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Thesis\\HotReload\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Thesis\\HotReload\\": "tests/"
+        }
+    },
+    "config": {
+        "lock": false,
+        "sort-packages": true
+    }
+}

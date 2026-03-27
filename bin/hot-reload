@@ -55,7 +55,7 @@ new class extends SingleCommandApplication {
                 extensions: $extensions,
                 excludes: $excludes,
             ),
-            start: static fn () => Tty::start($cmd),
+            start: static fn() => Tty::start($cmd),
             debounce: $debounce,
         );
     }

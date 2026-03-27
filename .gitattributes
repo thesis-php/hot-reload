@@ -5,6 +5,7 @@
 *.php diff=php
 
 * export-ignore
+/bin/ -export-ignore
 /bin/hot-reload -export-ignore
 /src/ -export-ignore
 /src/** -export-ignore

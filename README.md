@@ -6,7 +6,7 @@ Useful for development servers, workers, or any long-running PHP process.
 ## Installation
 
 ```bash
-composer require thesis/hot-reload
+composer require thesis/hot-reload --dev
 ```
 
 Requires PHP 8.4+.

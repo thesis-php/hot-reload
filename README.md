@@ -43,6 +43,10 @@ vendor/bin/hot-reload --path=src --ext=php --exclude='*.generated.php' -- php se
 vendor/bin/hot-reload --debounce=0.5 -- php server.php
 ```
 
+## Roadmap
+
+- [ ] `inotify`-based change detector for Linux (event-driven, no polling)
+
 ## License
 
 MIT

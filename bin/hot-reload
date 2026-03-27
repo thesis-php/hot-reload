@@ -1,0 +1,50 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Symfony\Component\Console\Attribute\Argument;
+use Symfony\Component\Console\Attribute\Option;
+use Symfony\Component\Console\SingleCommandApplication;
+use Thesis\HotReload\Target;
+use Thesis\HotReload\Watcher;
+
+(static function (): void {
+    $autoloaders = [
+        __DIR__ . '/../vendor/autoload.php',
+        __DIR__ . '/../../../autoload.php',
+    ];
+
+    if (array_any($autoloaders, fn($autoloader) => (@include_once $autoloader) !== false)) {
+        return;
+    }
+
+    fwrite(STDERR, "autoload.php not found\n");
+
+    exit(1);
+})();
+
+new class extends SingleCommandApplication {
+    /**
+     * @param list<string> $cmd
+     * @param list<string> $paths
+     * @param list<string> $extensions
+     * @param list<string> $excludes
+     */
+    public function __invoke(
+        #[Argument(description: 'Command to run')]
+        array $cmd,
+        #[Option(description: 'Paths to watch', name: 'path')]
+        array $paths = ['src'],
+        #[Option(description: 'Extensions to watch (if none, all are watched)', name: 'extension')]
+        array $extensions = [],
+        #[Option(description: 'Patterns to exclude (e.g. *.generated.php)', name: 'exclude')]
+        array $excludes = [],
+    ): int {
+        return new Watcher()->watch($cmd, new Target(
+            paths: $paths,
+            extensions: $extensions,
+            excludes: $excludes,
+        ));
+    }
+}->run();

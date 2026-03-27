@@ -18,9 +18,18 @@
         }
     ],
     "require": {
-        "php": "^8.3"
+        "php": "^8.4",
+        "ext-pcntl": "*",
+        "ext-posix": "*",
+        "amphp/amp": "^3.0",
+        "amphp/byte-stream": "^2.1",
+        "revolt/event-loop": "^1.0",
+        "symfony/console": "^8.0",
+        "thesis/exceptionally": "^0.2.0"
     },
     "require-dev": {
+        "amphp/http-server": "^3.4",
+        "amphp/log": "^2.0",
         "phpunit/phpunit": "^12.4",
         "symfony/var-dumper": "^7.4"
     },
@@ -34,6 +43,9 @@
             "Thesis\\HotReload\\": "tests/"
         }
     },
+    "bin": [
+        "bin/hot-reload"
+    ],
     "config": {
         "lock": false,
         "sort-packages": true

@@ -1,7 +1,9 @@
 # Thesis Hot Reload
 
 Watches files for changes and automatically restarts a command.
+
 Useful for development servers, workers, or any long-running PHP process.
+
 Supports debouncing to avoid redundant restarts when multiple files change at once.
 
 ## Installation

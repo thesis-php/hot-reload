@@ -7,6 +7,7 @@ namespace Thesis\HotReload\ChangeDetector;
 use Thesis\HotReload\Target;
 
 /**
+ * @api
  * @implements \IteratorAggregate<int, \SplFileInfo>
  */
 final readonly class Finder implements \IteratorAggregate

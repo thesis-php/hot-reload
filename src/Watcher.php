@@ -4,40 +4,47 @@ declare(strict_types=1);
 
 namespace Thesis\HotReload;
 
-use Thesis\HotReload\ChangeDetector\FileMtime;
+use Amp\Cancellation;
+use Amp\NullCancellation;
+use Thesis\HotReload\ChangeDetector\MtimePolling;
 use function Amp\ByteStream\getStderr;
-use function Amp\delay;
 
+/**
+ * @api
+ */
 final readonly class Watcher
 {
     public function __construct(
-        private ChangeDetector $changeDetector = new FileMtime(),
+        private ChangeDetector $changeDetector = new MtimePolling(),
     ) {}
 
     /**
-     * @param string|list<string> $command
+     * @param callable(): Process $start
      * @return non-negative-int
      */
-    public function watch(string|array $command, Target $target): int
+    public function watch(Target $target, callable $start, float $debounce = 0.1, Cancellation $cancellation = new NullCancellation()): int
     {
-        $process = ProcessWithTTY::start($command);
+        do {
+            $process = $start();
 
-        $changed = $this->changeDetector->createDetector($target);
+            $changed = false;
 
-        while ($process->isRunning) {
-            if ($changed()) {
-                getStderr()->write("\n\033[33m  ➜ Files changed, reloading...\033[0m\n\n");
+            $id = $this->changeDetector->onChanged(
+                target: $target,
+                listener: debounce(static function () use ($process, &$changed): void {
+                    getStderr()->write("\n\033[33m  ➜ Files changed, reloading...\033[0m\n\n");
 
-                $process->terminate();
+                    $changed = true;
 
-                $process = ProcessWithTTY::start($command);
+                    $process->terminate();
+                }, $debounce),
+            );
 
-                continue;
-            }
+            $exitCode = $process->await($cancellation);
 
-            delay(0.1);
-        }
+            $this->changeDetector->cancel($id);
+        } while ($changed);
 
-        return $process->terminate();
+        return $exitCode;
     }
 }

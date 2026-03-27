@@ -6,20 +6,26 @@ declare(strict_types=1);
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
+use Thesis\HotReload\Process\Tty;
 use Thesis\HotReload\Target;
 use Thesis\HotReload\Watcher;
 
 (static function (): void {
-    $autoloaders = [
+    $autoloaders = array_filter([
+        /** @phpstan-ignore nullCoalesce.variable */
+        $_composer_autoload_path ?? null,
         __DIR__ . '/../vendor/autoload.php',
         __DIR__ . '/../../../autoload.php',
-    ];
+    ]);
 
-    if (array_any($autoloaders, fn($autoloader) => (@include_once $autoloader) !== false)) {
+    if (array_any($autoloaders, fn($autoloader) => (bool) @include_once $autoloader)) {
         return;
     }
 
-    fwrite(STDERR, "autoload.php not found\n");
+    fwrite(STDERR, "autoload.php not found. Tried:\n" . implode("\n", array_map(
+        static fn($path) => "  - {$path}",
+        $autoloaders,
+    )) . "\n");
 
     exit(1);
 })();
@@ -36,15 +42,21 @@ new class extends SingleCommandApplication {
         array $cmd,
         #[Option(description: 'Paths to watch', name: 'path')]
         array $paths = ['src'],
-        #[Option(description: 'Extensions to watch (if none, all are watched)', name: 'extension')]
+        #[Option(description: 'Extensions to watch (if none, all are watched)', name: 'ext')]
         array $extensions = [],
         #[Option(description: 'Patterns to exclude (e.g. *.generated.php)', name: 'exclude')]
         array $excludes = [],
+        #[Option(description: 'Debounce delay in seconds')]
+        float $debounce = 0.1,
     ): int {
-        return new Watcher()->watch($cmd, new Target(
-            paths: $paths,
-            extensions: $extensions,
-            excludes: $excludes,
-        ));
+        return new Watcher()->watch(
+            target: new Target(
+                paths: $paths,
+                extensions: $extensions,
+                excludes: $excludes,
+            ),
+            start: static fn () => Tty::start($cmd),
+            debounce: $debounce,
+        );
     }
 }->run();

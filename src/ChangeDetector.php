@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Thesis\HotReload;
 
+/**
+ * @api
+ */
 interface ChangeDetector
 {
     /**
-     * @return callable(): bool
+     * @param callable(string): void $listener
      */
-    public function createDetector(Target $target): callable;
+    public function onChanged(Target $target, callable $listener): string;
+
+    public function cancel(string $id): void;
 }

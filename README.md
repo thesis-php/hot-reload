@@ -19,11 +19,12 @@ vendor/bin/hot-reload [options] [--] <cmd>
 
 ### Options
 
-| Option        | Description                                                     | Default |
-|---------------|-----------------------------------------------------------------|---------|
-| `--path`      | Paths to watch (repeatable)                                     | `src`   |
-| `--extension` | File extensions to watch (repeatable; if none, all are watched) | all     |
-| `--exclude`   | Patterns to exclude (repeatable, e.g. `*.generated.php`)        | —       |
+| Option       | Description                                                     | Default |
+|--------------|-----------------------------------------------------------------|---------|
+| `--path`     | Paths to watch (repeatable)                                     | `[src]` |
+| `--ext`      | File extensions to watch (repeatable; if none, all are watched) | `[]`    |
+| `--exclude`  | Patterns to exclude (repeatable, e.g. `*.generated.php`)        | `[]`    |
+| `--debounce` | Delay in seconds before restarting after a change               | `0.1`   |
 
 ### Examples
 
@@ -32,10 +33,13 @@ vendor/bin/hot-reload [options] [--] <cmd>
 vendor/bin/hot-reload -- php server.php
 
 # Watch multiple paths, only .php files
-vendor/bin/hot-reload --path=src --path=config --extension=php -- php server.php
+vendor/bin/hot-reload --path=src --path=config --ext=php -- php server.php
 
 # Exclude generated files
-vendor/bin/hot-reload --path=src --extension=php --exclude='*.generated.php' -- php server.php
+vendor/bin/hot-reload --path=src --ext=php --exclude='*.generated.php' -- php server.php
+
+# Increase debounce delay (useful when many files change at once)
+vendor/bin/hot-reload --debounce=0.5 -- php server.php
 ```
 
 ## License

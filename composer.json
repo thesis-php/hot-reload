@@ -36,7 +36,10 @@
     "autoload": {
         "psr-4": {
             "Thesis\\HotReload\\": "src/"
-        }
+        },
+        "files": [
+            "src/debounce.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

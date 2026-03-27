@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Thesis\HotReload;
+namespace Thesis\HotReload\Process;
 
 use Amp\Cancellation;
 use Amp\DeferredFuture;
 use Amp\Future;
 use Amp\NullCancellation;
 use Revolt\EventLoop;
+use Thesis\HotReload\Process;
 use function Thesis\exceptionally;
 
-final class ProcessWithTTY
+/**
+ * @api
+ */
+final readonly class Tty implements Process
 {
     private const array FORWARDED_SIGNALS = [
         SIGHUP,   // terminal hangup / reload config
@@ -37,7 +41,7 @@ final class ProcessWithTTY
         $process = exceptionally(static fn() => proc_open(
             command: $command,
             descriptor_spec: [STDIN, STDOUT, STDERR],
-            pipes: $pipes,
+            pipes: $_,
         ));
 
         $pid = proc_get_status($process)['pid'];
@@ -66,10 +70,8 @@ final class ProcessWithTTY
 
             proc_close($process);
 
-            $exitCode = $status['exitcode'];
-            \assert($exitCode >= 0);
-
-            $deferred->complete($exitCode);
+            /** @phpstan-ignore cast.useless */
+            $deferred->complete(max(0, (int) $status['exitcode']));
         };
 
         $callbackIds[] = EventLoop::onSignal(SIGCHLD, $check);
@@ -88,23 +90,19 @@ final class ProcessWithTTY
      * @param Future<non-negative-int> $run
      */
     private function __construct(
-        private readonly mixed $process,
-        private readonly Future $run,
+        private mixed $process,
+        private Future $run,
     ) {}
 
-    public bool $isRunning {
-        get => !$this->run->isComplete();
-    }
-
-    /**
-     * @return non-negative-int
-     */
-    public function terminate(Cancellation $cancellation = new NullCancellation()): int
+    public function terminate(): void
     {
         if (!$this->run->isComplete()) {
             exceptionally(fn() => proc_terminate($this->process));
         }
+    }
 
+    public function await(Cancellation $cancellation = new NullCancellation()): int
+    {
         return $this->run->await($cancellation);
     }
 }

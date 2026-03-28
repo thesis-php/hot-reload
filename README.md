@@ -45,6 +45,32 @@ vendor/bin/hot-reload --path=src --ext=php --exclude='*.generated.php' -- php se
 vendor/bin/hot-reload --debounce=0.5 -- php server.php
 ```
 
+## PHP API
+
+You can use the watcher directly in PHP instead of the CLI binary:
+
+```php
+use Thesis\HotReload\Process\Tty;
+use Thesis\HotReload\Target;
+use Thesis\HotReload\Watcher;
+
+$exitCode = new Watcher()->watch(
+    target: new Target(
+        paths: ['src'],
+        extensions: ['php'],
+        excludes: ['*.generated.php'],
+    ),
+    start: static fn() => Tty::start(['php', 'server.php']),
+    debounce: 0.1,
+);
+
+exit($exitCode);
+```
+
+`Tty::start()` accepts either a string command or an array of arguments (which will be shell-escaped).
+
+To use a custom process, implement the `Thesis\HotReload\Process` interface.
+
 ## Roadmap
 
 - [ ] `inotify`-based change detector for Linux (event-driven, no polling)

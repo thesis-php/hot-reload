@@ -24,9 +24,9 @@ vendor/bin/hot-reload [options] [--] <cmd>
 
 | Option       | Description                                                     | Default |
 |--------------|-----------------------------------------------------------------|---------|
-| `--path`     | Paths to watch (repeatable)                                     | `[src]` |
-| `--ext`      | File extensions to watch (repeatable; if none, all are watched) | `[]`    |
-| `--exclude`  | Patterns to exclude (repeatable, e.g. `*.generated.php`)        | `[]`    |
+| `--path`     | Paths to watch (repeatable)                                     | `src`   |
+| `--ext`      | File extensions to watch (repeatable; if none, all are watched) | none    |
+| `--exclude`  | Patterns to exclude (repeatable, e.g. `*.generated.php`)        | none    |
 | `--debounce` | Delay in seconds before restarting after a change               | `0.1`   |
 
 ### Examples
@@ -47,33 +47,38 @@ vendor/bin/hot-reload --debounce=0.5 -- php server.php
 
 ## PHP API
 
-You can use the watcher directly in PHP instead of the CLI binary:
+You can use `hotReload()` directly in PHP instead of the CLI binary:
 
 ```php
-use Thesis\HotReload\Process\Tty;
-use Thesis\HotReload\Target;
-use Thesis\HotReload\Watcher;
+use Amp\Cancellation;
+use Amp\Http\Server\SocketHttpServer;
+use function Amp\trapSignal;
+use function Thesis\hotReload;
 
-$exitCode = new Watcher()->watch(
-    target: new Target(
-        paths: ['src'],
-        extensions: ['php'],
-        excludes: ['*.generated.php'],
-    ),
-    start: static fn() => Tty::start(['php', 'server.php']),
-    debounce: 0.1,
+hotReload(
+    files: __DIR__ . '/path/to/src',
+    process: static function (Cancellation $cancellation): void {
+        $server = SocketHttpServer::createForDirectAccess(/** ... */);
+
+        $cancellation->subscribe($server->stop(...));
+
+        $server->expose(/** ... */);
+
+        $server->start(/** ... */);
+
+        trapSignal([SIGINT, SIGTERM], cancellation: $cancellation);
+
+        $server->stop();
+    },
+    debounce: 0.2,
 );
-
-exit($exitCode);
 ```
 
-`Tty::start()` accepts either a string command or an array of arguments (which will be shell-escaped).
-
-To use a custom process, implement the `Thesis\HotReload\Process` interface.
+`$cancellation` is cancelled when files change or when `hotReload()` itself is cancelled — subscribe to it to stop the process gracefully.
 
 ## Roadmap
 
-- [ ] `inotify`-based change detector for Linux (event-driven, no polling)
+- [ ] [inotify](https://www.php.net/manual/en/book.inotify.php)-based change detector for Linux (event-driven, no polling)
 
 ## License
 

@@ -3,12 +3,13 @@
 
 declare(strict_types=1);
 
+namespace Thesis;
+
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
-use Thesis\HotReload\Process\Tty;
-use Thesis\HotReload\Target;
-use Thesis\HotReload\Watcher;
+use Thesis\HotReload\Files;
+use Thesis\HotReload\Internal\TtyProcess;
 
 (static function (): void {
     $autoloaders = array_filter([
@@ -32,10 +33,11 @@ use Thesis\HotReload\Watcher;
 
 new class extends SingleCommandApplication {
     /**
-     * @param list<string> $cmd
-     * @param list<string> $paths
-     * @param list<string> $extensions
+     * @param non-empty-list<non-empty-string> $cmd
+     * @param non-empty-list<string> $paths
+     * @param ?non-empty-list<string> $extensions
      * @param list<string> $excludes
+     * @return non-negative-int
      */
     public function __invoke(
         #[Argument(description: 'Command to run')]
@@ -43,19 +45,19 @@ new class extends SingleCommandApplication {
         #[Option(description: 'Paths to watch', name: 'path')]
         array $paths = ['src'],
         #[Option(description: 'Extensions to watch (if none, all are watched)', name: 'ext')]
-        array $extensions = [],
+        ?array $extensions = null,
         #[Option(description: 'Patterns to exclude (e.g. *.generated.php)', name: 'exclude')]
         array $excludes = [],
         #[Option(description: 'Debounce delay in seconds')]
         float $debounce = 0.1,
     ): int {
-        return new Watcher()->watch(
-            target: new Target(
+        return hotReload(
+            files: new Files(
                 paths: $paths,
                 extensions: $extensions,
                 excludes: $excludes,
             ),
-            start: static fn() => Tty::start($cmd),
+            process: new TtyProcess($cmd),
             debounce: $debounce,
         );
     }

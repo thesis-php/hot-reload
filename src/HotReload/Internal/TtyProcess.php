@@ -2,20 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Thesis\HotReload\Process;
+namespace Thesis\HotReload\Internal;
 
 use Amp\Cancellation;
 use Amp\DeferredFuture;
-use Amp\Future;
-use Amp\NullCancellation;
 use Revolt\EventLoop;
-use Thesis\HotReload\Process;
 use function Thesis\exceptionally;
 
 /**
- * @api
+ * @internal
  */
-final readonly class Tty implements Process
+final readonly class TtyProcess
 {
     private const array FORWARDED_SIGNALS = [
         SIGHUP,   // terminal hangup / reload config
@@ -30,16 +27,19 @@ final readonly class Tty implements Process
     ];
 
     /**
-     * @param string|list<string> $command
+     * @param non-empty-list<non-empty-string> $command
      */
-    public static function start(string|array $command): self
-    {
-        if (\is_array($command)) {
-            $command = implode(' ', array_map(\escapeshellarg(...), $command));
-        }
+    public function __construct(
+        private array $command,
+    ) {}
 
-        $process = exceptionally(static fn() => proc_open(
-            command: $command,
+    /**
+     * @return non-negative-int
+     */
+    public function __invoke(Cancellation $cancellation): int
+    {
+        $process = exceptionally(fn() => proc_open(
+            command: $this->command,
             descriptor_spec: [STDIN, STDOUT, STDERR],
             pipes: $_,
         ));
@@ -56,53 +56,42 @@ final readonly class Tty implements Process
             self::FORWARDED_SIGNALS,
         );
 
+        $cancellationId = $cancellation->subscribe(static function () use ($process): void {
+            exceptionally(static fn() => proc_terminate($process));
+        });
+
         /** @var DeferredFuture<non-negative-int> */
         $deferred = new DeferredFuture();
 
-        $check = static function () use ($process, &$callbackIds, $deferred): void {
+        $checkStatus = static function () use ($process, $deferred): void {
             $status = proc_get_status($process);
 
-            if ($status['running']) {
+            if ($status['running'] || $deferred->isComplete()) {
                 return;
             }
-
-            array_walk($callbackIds, EventLoop::cancel(...));
-
-            proc_close($process);
 
             /** @phpstan-ignore cast.useless */
             $deferred->complete(max(0, (int) $status['exitcode']));
         };
 
-        $callbackIds[] = EventLoop::onSignal(SIGCHLD, $check);
+        $callbackIds[] = EventLoop::onSignal(SIGCHLD, $checkStatus);
 
         // The process may exit before the SIGCHLD handler is registered, so check immediately
-        $check();
+        $checkStatus();
 
-        return new self(
-            process: $process,
-            run: $deferred->getFuture(),
-        );
-    }
+        try {
+            // do not pass $cancellation to await()
+            // to make sure the process is finished before throwing the cancellation
+            $exitCode = $deferred->getFuture()->await();
 
-    /**
-     * @param resource $process
-     * @param Future<non-negative-int> $run
-     */
-    private function __construct(
-        private mixed $process,
-        private Future $run,
-    ) {}
+            $cancellation->throwIfRequested();
 
-    public function terminate(): void
-    {
-        if (!$this->run->isComplete()) {
-            exceptionally(fn() => proc_terminate($this->process));
+            return $exitCode;
+        } finally {
+            proc_close($process);
+
+            array_walk($callbackIds, EventLoop::cancel(...));
+            $cancellation->unsubscribe($cancellationId);
         }
-    }
-
-    public function await(Cancellation $cancellation = new NullCancellation()): int
-    {
-        return $this->run->await($cancellation);
     }
 }

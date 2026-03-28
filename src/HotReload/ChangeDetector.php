@@ -12,7 +12,7 @@ interface ChangeDetector
     /**
      * @param callable(string): void $listener
      */
-    public function onChanged(Target $target, callable $listener): string;
+    public function onChanged(Files $files, callable $listener): string;
 
     public function cancel(string $id): void;
 }

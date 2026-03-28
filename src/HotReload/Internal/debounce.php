@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Thesis\HotReload;
+namespace Thesis\HotReload\Internal;
 
 use Revolt\EventLoop;
 
 /**
+ * @internal
+ *
  * @param callable(): void $callback
  * @param float $delay in seconds
  * @return callable(): void

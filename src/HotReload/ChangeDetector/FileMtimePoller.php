@@ -6,12 +6,12 @@ namespace Thesis\HotReload\ChangeDetector;
 
 use Revolt\EventLoop;
 use Thesis\HotReload\ChangeDetector;
-use Thesis\HotReload\Target;
+use Thesis\HotReload\Files;
 
 /**
  * @api
  */
-final readonly class MtimePolling implements ChangeDetector
+final readonly class FileMtimePoller implements ChangeDetector
 {
     /**
      * @param float $interval in seconds
@@ -20,12 +20,12 @@ final readonly class MtimePolling implements ChangeDetector
         private float $interval = 0.1,
     ) {}
 
-    public function onChanged(Target $target, callable $listener): string
+    public function onChanged(Files $files, callable $listener): string
     {
-        $snapshot = self::snapshot($target);
+        $snapshot = self::snapshot($files);
 
-        return EventLoop::repeat($this->interval, static function (string $id) use ($target, &$snapshot, $listener): void {
-            $newSnapshot = self::snapshot($target);
+        return EventLoop::repeat($this->interval, static function (string $id) use ($files, &$snapshot, $listener): void {
+            $newSnapshot = self::snapshot($files);
 
             if ($newSnapshot === $snapshot) {
                 return;
@@ -45,11 +45,11 @@ final readonly class MtimePolling implements ChangeDetector
     /**
      * @return non-empty-string
      */
-    private static function snapshot(Target $target): string
+    private static function snapshot(Files $files): string
     {
         $snapshot = [];
 
-        foreach (new Finder($target) as $file) {
+        foreach ($files as $file) {
             \assert($file->getRealPath() !== false);
 
             $snapshot[$file->getRealPath()] ??= $file->getMTime();

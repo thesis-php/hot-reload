@@ -35,15 +35,16 @@
     },
     "autoload": {
         "psr-4": {
-            "Thesis\\HotReload\\": "src/"
+            "Thesis\\": "src/"
         },
         "files": [
-            "src/debounce.php"
+            "src/HotReload/Internal/debounce.php",
+            "src/hotReload.php"
         ]
     },
     "autoload-dev": {
         "psr-4": {
-            "Thesis\\HotReload\\": "tests/"
+            "Thesis\\": "tests/"
         }
     },
     "bin": [

@@ -69,7 +69,31 @@ exit($exitCode);
 
 `Tty::start()` accepts either a string command or an array of arguments (which will be shell-escaped).
 
-To use a custom process, implement the `Thesis\HotReload\Process` interface.
+To watch an in-process coroutine instead of a subprocess, use `Thesis\HotReload\Process\Coroutine`
+([amphp/http-server](https://amphp.org/http-server) example):
+
+```php
+use Amp\CancelledException;new Watcher()->watch(
+    target: new Target(
+        paths: [__DIR__ . '/path/to/src'],
+    ),
+    start: static fn() => new Coroutine(function (Cancellation $cancellation): int {
+        $server = SocketHttpServer::createForDirectAccess(/** ... */);
+
+        $cancellation->subscribe($server->stop(...));
+
+        $server->expose(/** ... */);
+
+        $server->start(/** ... */);
+
+        trapSignal([SIGINT, SIGTERM], cancellation: $cancellation);
+
+        $server->stop();
+
+        return 0;
+    }),
+);
+```
 
 ## Roadmap
 

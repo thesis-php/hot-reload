@@ -50,9 +50,13 @@ final readonly class FileMtimePoller implements ChangeDetector
         $snapshot = [];
 
         foreach ($files as $file) {
-            \assert($file->getRealPath() !== false);
+            $realPath = $file->getRealPath();
 
-            $snapshot[$file->getRealPath()] ??= $file->getMTime();
+            if ($realPath === false) {
+                throw new \RuntimeException("File {$file} does not exist");
+            }
+
+            $snapshot[$realPath] ??= $file->getMTime();
         }
 
         ksort($snapshot);

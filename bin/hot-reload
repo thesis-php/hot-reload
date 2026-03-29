@@ -32,7 +32,7 @@ use function Thesis\HotReload\hotReload;
 
 new class extends SingleCommandApplication {
     /**
-     * @param list<string> $cmd
+     * @param non-empty-list<string> $cmd
      * @param non-empty-list<string> $paths
      * @param ?non-empty-list<string> $extensions
      * @param list<string> $excludes

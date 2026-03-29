@@ -3,12 +3,13 @@
 
 declare(strict_types=1);
 
+namespace Thesis;
+
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
 use Thesis\HotReload\Files;
 use Thesis\HotReload\Internal\TtyProcess;
-use function Thesis\HotReload\hotReload;
 
 (static function (): void {
     $autoloaders = array_filter([

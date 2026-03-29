@@ -53,7 +53,7 @@ You can use `hotReload()` directly in PHP instead of the CLI binary:
 use Amp\Cancellation;
 use Amp\Http\Server\SocketHttpServer;
 use function Amp\trapSignal;
-use function Thesis\HotReload\hotReload;
+use function Thesis\hotReload;
 
 hotReload(
     files: __DIR__ . '/path/to/src',

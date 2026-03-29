@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Thesis\HotReload;
+namespace Thesis;
 
 use Amp\Cancellation;
 use Amp\CancelledException;
@@ -10,7 +10,9 @@ use Amp\CompositeCancellation;
 use Amp\DeferredCancellation;
 use Amp\Future;
 use Amp\NullCancellation;
+use Thesis\HotReload\ChangeDetector;
 use Thesis\HotReload\ChangeDetector\FileMtimePoller;
+use Thesis\HotReload\Files;
 use Thesis\HotReload\Internal\FilesChanged;
 use function Amp\async;
 use function Amp\ByteStream\getStderr;

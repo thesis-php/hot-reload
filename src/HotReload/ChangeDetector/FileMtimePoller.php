@@ -13,11 +13,13 @@ use Thesis\HotReload\Files;
  */
 final readonly class FileMtimePoller implements ChangeDetector
 {
+    public const float DEFAULT_INTERVAL = 0.1;
+
     /**
      * @param float $interval in seconds
      */
     public function __construct(
-        private float $interval = 0.1,
+        private float $interval = self::DEFAULT_INTERVAL,
     ) {}
 
     public function onChanged(Files $files, callable $listener): string

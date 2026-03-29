@@ -3,7 +3,6 @@
 
 declare(strict_types=1);
 
-use Amp\Cancellation;
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
@@ -37,6 +36,7 @@ new class extends SingleCommandApplication {
      * @param non-empty-list<string> $paths
      * @param ?non-empty-list<string> $extensions
      * @param list<string> $excludes
+     * @return non-negative-int
      */
     public function __invoke(
         #[Argument(description: 'Command to run')]
@@ -50,21 +50,14 @@ new class extends SingleCommandApplication {
         #[Option(description: 'Debounce delay in seconds')]
         float $debounce = 0.1,
     ): int {
-        /** @var non-negative-int */
-        $exitCode = 0;
-
-        hotReload(
+        return hotReload(
             files: new Files(
                 paths: $paths,
                 extensions: $extensions,
                 excludes: $excludes,
             ),
-            process: static function (Cancellation $cancellation) use ($cmd, &$exitCode): void {
-                $exitCode = new TtyProcess($cmd)->run($cancellation);
-            },
+            process: new TtyProcess($cmd),
             debounce: $debounce,
         );
-
-        return $exitCode;
     }
 }->run();

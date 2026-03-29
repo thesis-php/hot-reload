@@ -33,7 +33,10 @@ final readonly class TtyProcess
         private string|array $command,
     ) {}
 
-    public function run(Cancellation $cancellation): int
+    /**
+     * @return non-negative-int
+     */
+    public function __invoke(Cancellation $cancellation): int
     {
         $process = exceptionally(fn() => proc_open(
             command: $this->command,

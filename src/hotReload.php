@@ -8,6 +8,7 @@ use Amp\Cancellation;
 use Amp\CancelledException;
 use Amp\CompositeCancellation;
 use Amp\DeferredCancellation;
+use Amp\Future;
 use Amp\NullCancellation;
 use Thesis\HotReload\ChangeDetector\FileMtimePoller;
 use Thesis\HotReload\Internal\FilesChanged;
@@ -18,8 +19,10 @@ use function Thesis\HotReload\Internal\debounce;
 /**
  * @api
  *
+ * @template T
  * @param string|non-empty-list<string>|Files $files
- * @param callable(Cancellation): void $process
+ * @param callable(Cancellation): T $process
+ * @return T
  */
 function hotReload(
     string|array|Files $files,
@@ -27,7 +30,7 @@ function hotReload(
     float $debounce = 0.1,
     Cancellation $cancellation = new NullCancellation(),
     ChangeDetector $changeDetector = new FileMtimePoller(),
-): void {
+): mixed {
     $files = match (true) {
         \is_string($files) => new Files([$files]),
         \is_array($files) => new Files($files),
@@ -37,6 +40,7 @@ function hotReload(
     while (true) {
         $cancel = new DeferredCancellation();
 
+        /** @var Future<T> */
         $run = async(static fn() => $process(new CompositeCancellation(
             $cancellation,
             $cancel->getCancellation(),
@@ -52,9 +56,7 @@ function hotReload(
         );
 
         try {
-            $run->await($cancellation);
-
-            return;
+            return $run->await($cancellation);
         } catch (CancelledException $exception) {
             if ($exception->getPrevious() instanceof FilesChanged) {
                 continue;

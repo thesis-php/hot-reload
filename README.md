@@ -24,9 +24,9 @@ vendor/bin/hot-reload [options] [--] <cmd>
 
 | Option       | Description                                                     | Default |
 |--------------|-----------------------------------------------------------------|---------|
-| `--path`     | Paths to watch (repeatable)                                     | `[src]` |
-| `--ext`      | File extensions to watch (repeatable; if none, all are watched) | `[]`    |
-| `--exclude`  | Patterns to exclude (repeatable, e.g. `*.generated.php`)        | `[]`    |
+| `--path`     | Paths to watch (repeatable)                                     | `src`   |
+| `--ext`      | File extensions to watch (repeatable; if none, all are watched) | none    |
+| `--exclude`  | Patterns to exclude (repeatable, e.g. `*.generated.php`)        | none    |
 | `--debounce` | Delay in seconds before restarting after a change               | `0.1`   |
 
 ### Examples
@@ -47,37 +47,19 @@ vendor/bin/hot-reload --debounce=0.5 -- php server.php
 
 ## PHP API
 
-You can use the watcher directly in PHP instead of the CLI binary:
+You can use `hotReload()` directly in PHP instead of the CLI binary:
 
 ```php
-use Thesis\HotReload\Process\Tty;
+use Amp\Cancellation;
+use Amp\Http\Server\SocketHttpServer;
 use Thesis\HotReload\Files;
-use Thesis\HotReload\Watcher;
+use Thesis\HotReload\TtyProcess;
+use function Amp\trapSignal;
+use function Thesis\HotReload\hotReload;
 
-$exitCode = new Watcher()->watch(
-    target: new Files(
-        paths: ['src'],
-        extensions: ['php'],
-        excludes: ['*.generated.php'],
-    ),
-    process: static fn() => Tty::start(['php', 'server.php']),
-    debounce: 0.1,
-);
-
-exit($exitCode);
-```
-
-`Tty::start()` accepts either a string command or an array of arguments (which will be shell-escaped).
-
-To watch an in-process coroutine instead of a subprocess, use `Thesis\HotReload\Process\Coroutine`
-([amphp/http-server](https://amphp.org/http-server) example):
-
-```php
-use Amp\CancelledException;new Watcher()->watch(
-    target: new Target(
-        paths: [__DIR__ . '/path/to/src'],
-    ),
-    start: static fn() => new Coroutine(function (Cancellation $cancellation): int {
+hotReload(
+    files: __DIR__ . '/path/to/src',
+    process: static function (Cancellation $cancellation): void {
         $server = SocketHttpServer::createForDirectAccess(/** ... */);
 
         $cancellation->subscribe($server->stop(...));
@@ -89,11 +71,12 @@ use Amp\CancelledException;new Watcher()->watch(
         trapSignal([SIGINT, SIGTERM], cancellation: $cancellation);
 
         $server->stop();
-
-        return 0;
-    }),
+    },
+    debounce: 0.2,
 );
 ```
+
+`$cancellation` is cancelled when files change or when `hotReload()` itself is cancelled — subscribe to it to stop the process gracefully.
 
 ## Roadmap
 

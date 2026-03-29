@@ -78,7 +78,7 @@ hotReload(
 
 ## Roadmap
 
-- [ ] `inotify`-based change detector for Linux (event-driven, no polling)
+- [ ] [inotify](https://www.php.net/manual/en/book.inotify.php)-based change detector for Linux (event-driven, no polling)
 
 ## License
 

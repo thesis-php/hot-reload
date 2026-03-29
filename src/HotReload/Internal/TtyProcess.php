@@ -27,7 +27,7 @@ final readonly class TtyProcess
     ];
 
     /**
-     * @param string|list<string> $command
+     * @param string|non-empty-list<string> $command
      */
     public function __construct(
         private string|array $command,
@@ -56,20 +56,22 @@ final readonly class TtyProcess
             self::FORWARDED_SIGNALS,
         );
 
-        /** @var DeferredFuture<non-negative-int> */
-        $deferred = new DeferredFuture();
-
         $cancellationId = $cancellation->subscribe(static function () use ($process): void {
             exceptionally(static fn() => proc_terminate($process));
         });
 
+        /** @var DeferredFuture<non-negative-int> */
+        $deferred = new DeferredFuture();
+
         $checkStatus = static function () use ($process, $deferred): void {
             $status = proc_get_status($process);
 
-            if (!$status['running']) {
-                /** @phpstan-ignore cast.useless */
-                $deferred->complete(max(0, (int) $status['exitcode']));
+            if ($status['running'] || $deferred->isComplete()) {
+                return;
             }
+
+            /** @phpstan-ignore cast.useless */
+            $deferred->complete(max(0, (int) $status['exitcode']));
         };
 
         $callbackIds[] = EventLoop::onSignal(SIGCHLD, $checkStatus);
@@ -78,7 +80,13 @@ final readonly class TtyProcess
         $checkStatus();
 
         try {
-            return $deferred->getFuture()->await($cancellation);
+            // do not pass $cancellation to await()
+            // to make sure the process is finished before throwing the cancellation
+            $exitCode = $deferred->getFuture()->await();
+
+            $cancellation->throwIfRequested();
+
+            return $exitCode;
         } finally {
             proc_close($process);
 

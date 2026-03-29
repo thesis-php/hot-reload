@@ -50,12 +50,7 @@ vendor/bin/hot-reload --debounce=0.5 -- php server.php
 You can use `hotReload()` directly in PHP instead of the CLI binary:
 
 ```php
-use Amp\Cancellation;
-use Amp\Http\Server\SocketHttpServer;
-use Thesis\HotReload\Files;
-use Thesis\HotReload\TtyProcess;
-use function Amp\trapSignal;
-use function Thesis\HotReload\hotReload;
+use Amp\Cancellation;use Amp\Http\Server\SocketHttpServer;use function Amp\trapSignal;use function Thesis\HotReload\hotReload;
 
 hotReload(
     files: __DIR__ . '/path/to/src',

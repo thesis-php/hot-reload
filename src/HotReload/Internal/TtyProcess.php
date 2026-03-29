@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Thesis\HotReload;
+namespace Thesis\HotReload\Internal;
 
 use Amp\Cancellation;
 use Amp\DeferredFuture;
@@ -10,7 +10,7 @@ use Revolt\EventLoop;
 use function Thesis\exceptionally;
 
 /**
- * @api
+ * @internal
  */
 final readonly class TtyProcess
 {

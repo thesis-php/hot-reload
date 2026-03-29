@@ -40,6 +40,9 @@ final readonly class Files implements \IteratorAggregate
         }
     }
 
+    /**
+     * Matches against extensions and excludes only, not paths.
+     */
     public function matches(\SplFileInfo $file): bool
     {
         if (!$file->isFile()) {

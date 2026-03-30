@@ -20,7 +20,6 @@
     "require": {
         "php": "^8.4",
         "ext-pcntl": "*",
-        "ext-posix": "*",
         "amphp/amp": "^3.0",
         "amphp/byte-stream": "^2.1",
         "revolt/event-loop": "^1.0",

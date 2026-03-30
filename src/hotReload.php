@@ -23,7 +23,8 @@ use function Thesis\HotReload\Internal\debounce;
  *
  * @template T
  * @param string|non-empty-list<string>|Files $files
- * @param callable(Cancellation): T $process
+ * @param callable(Cancellation): T $process Cancellation is cancelled either when file changes are detected (process will be restarted)
+ *                                           or when the outer $cancellation is triggered (process will not be restarted)
  * @return T
  */
 function hotReload(

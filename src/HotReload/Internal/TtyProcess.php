@@ -11,9 +11,12 @@ use Revolt\EventLoop;
 use function Thesis\exceptionally;
 
 /**
+ * Runs a command transparently: inherits stdin/stdout/stderr from the parent
+ * process and forwards signals to the child.
+ *
  * @internal
  */
-final readonly class TtyProcess
+final class TtyProcess
 {
     private const array FORWARDED_SIGNALS = [
         SIGHUP,   // terminal hangup / reload config
@@ -29,83 +32,98 @@ final readonly class TtyProcess
 
     /**
      * @param non-empty-list<non-empty-string> $command
-     */
-    public function __construct(
-        private array $command,
-        private float $terminateTimeout = 10,
-    ) {}
-
-    /**
      * @return non-negative-int
      */
-    public function __invoke(Cancellation $cancellation): int
-    {
+    public static function start(
+        array $command,
+        Cancellation $termination,
+        float $terminationTimeout = 10,
+    ): int {
         /** @var DeferredFuture<non-negative-int> */
         $deferred = new DeferredFuture();
 
-        /** @var ?resource */
+        /** @var ?self */
         $process = null;
 
-        EventLoop::onSignal(SIGCHLD, static function (string $id) use (&$process, $deferred): void {
+        // Register before proc_open so SIGCHLD cannot slip through between the
+        // process start and handler registration. $process is captured by
+        // reference and filled in right after proc_open.
+        $callbackId = EventLoop::onSignal(SIGCHLD, static function () use ($deferred, &$process): void {
             if ($process === null) {
                 return;
             }
 
-            $status = proc_get_status($process);
+            $exitCode = $process->exitCode;
 
-            if ($status['running']) {
+            if ($exitCode < 0) {
                 return;
             }
 
             if (!$deferred->isComplete()) {
-                /** @phpstan-ignore cast.useless */
-                $deferred->complete(max(0, (int) $status['exitcode']));
+                $deferred->complete($exitCode);
             }
 
-            try {
-                proc_close($process);
-            } finally {
-                EventLoop::cancel($id);
-            }
+            $process->close();
         });
 
-        $process = exceptionally(fn() => proc_open(
-            command: $this->command,
-            descriptor_spec: [STDIN, STDOUT, STDERR],
-            pipes: $_,
-        ));
-
-        $pid = proc_get_status($process)['pid'];
-
-        $callbackIds = array_map(
-            static fn(int $signal) => EventLoop::onSignal(
-                signal: $signal,
-                closure: static function () use ($pid, $signal): void {
-                    exceptionally(static fn() => posix_kill($pid, $signal));
-                },
-            ),
-            self::FORWARDED_SIGNALS,
+        $process = new self(
+            process: exceptionally(static fn() => proc_open(
+                command: $command,
+                descriptor_spec: [STDIN, STDOUT, STDERR],
+                pipes: $_,
+            )),
+            callbackIds: [$callbackId],
         );
 
-        $terminateTimeout = $this->terminateTimeout;
+        foreach (self::FORWARDED_SIGNALS as $signal) {
+            $process->callbackIds[] = EventLoop::onSignal($signal, static fn() => $process->dispatchSignal($signal));
+        }
 
-        $cancellationId = $cancellation->subscribe(
-            static function (CancelledException $exception) use ($process, $deferred, $pid, $terminateTimeout): void {
-                exceptionally(static fn() => proc_terminate($process));
+        $terminationId = $termination->subscribe(
+            static function (CancelledException $exception) use ($deferred, $process, $terminationTimeout): void {
+                $process->dispatchSignal(SIGTERM);
+
+                $process->callbackIds[] = EventLoop::delay($terminationTimeout, static function () use ($process): void {
+                    $process->dispatchSignal(SIGKILL);
+                });
 
                 $deferred->error($exception);
-
-                EventLoop::delay($terminateTimeout, static function () use ($pid): void {
-                    exceptionally(static fn() => posix_kill($pid, SIGKILL));
-                });
             },
         );
 
         try {
             return $deferred->getFuture()->await();
         } finally {
-            array_walk($callbackIds, EventLoop::cancel(...));
-            $cancellation->unsubscribe($cancellationId);
+            $termination->unsubscribe($terminationId);
+        }
+    }
+
+    public int $exitCode {
+        get => proc_get_status($this->process)['exitcode'];
+    }
+
+    /**
+     * @param resource $process
+     * @param list<string> $callbackIds
+     */
+    private function __construct(
+        private readonly mixed $process,
+        private array $callbackIds,
+    ) {}
+
+    private function dispatchSignal(int $signal): void
+    {
+        exceptionally(fn() => proc_terminate($this->process, $signal));
+    }
+
+    private function close(): void
+    {
+        try {
+            proc_close($this->process);
+        } catch (\Throwable) {
+            // noop
+        } finally {
+            array_walk($this->callbackIds, EventLoop::cancel(...));
         }
     }
 }

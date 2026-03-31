@@ -52,7 +52,7 @@ new class extends SingleCommandApplication {
         #[Option(description: 'Debounce delay in seconds')]
         float $debounce = 0.1,
         #[Option(description: 'Termination timeout in seconds')]
-        float $terminationTimeout = 10,
+        float $termTimeout = 10,
     ): int {
         return hotReload(
             files: new Files(
@@ -63,7 +63,7 @@ new class extends SingleCommandApplication {
             process: static fn(Cancellation $termination) => TtyProcess::start(
                 command: $cmd,
                 termination: $termination,
-                terminationTimeout: $terminationTimeout,
+                terminationTimeout: $termTimeout,
             ),
             debounce: $debounce,
         );

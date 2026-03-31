@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Thesis;
 
+use Amp\Cancellation;
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
@@ -50,6 +51,8 @@ new class extends SingleCommandApplication {
         array $excludes = [],
         #[Option(description: 'Debounce delay in seconds')]
         float $debounce = 0.1,
+        #[Option(description: 'Termination timeout in seconds')]
+        float $terminationTimeout = 10,
     ): int {
         return hotReload(
             files: new Files(
@@ -57,7 +60,11 @@ new class extends SingleCommandApplication {
                 extensions: $extensions,
                 excludes: $excludes,
             ),
-            process: new TtyProcess($cmd),
+            process: static fn(Cancellation $termination) => TtyProcess::start(
+                command: $cmd,
+                termination: $termination,
+                terminationTimeout: $terminationTimeout,
+            ),
             debounce: $debounce,
         );
     }

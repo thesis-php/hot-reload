@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-03-31
+
+### Added
+- `--term-timeout` CLI option (default: `10s`) — time to wait for the process to exit after `SIGTERM` before sending `SIGKILL`
+
+### Fixed
+- `proc_close()` no longer blocks when the process is slow to respond to `SIGTERM`; it is now called only after `SIGCHLD` confirms the process has exited
+- `SIGKILL` is sent automatically after `$terminationTimeout` seconds if the process does not exit on `SIGTERM`
+
 ## [0.3.0] - 2026-03-30
 
 ### Added

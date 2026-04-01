@@ -9,9 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `--forward-signal` CLI option — forward signals to the process (e.g. `SIGUSR1` or `10`)
+- `TransparentProcess::start()` — runs a command inheriting stdin/stdout/stderr and forwarding signals
+
+### Fixed
+- `hotReload()` now correctly terminates the running task when files change; previously the task could outlive the restart
 
 ### Changed
 - **BC break:** `$process` parameter of `hotReload()` renamed to `$task`
+- **BC break:** `bin/hot-reload` no longer forwards any signals by default; use `--forward-signal` to opt in
 - **BC break:** Default `--term-timeout` changed from `10s` to `3s`
 
 ## [0.3.1] - 2026-03-31

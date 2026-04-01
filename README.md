@@ -2,7 +2,7 @@
 
 Watches files for changes and automatically restarts a command.
 
-Useful for development servers, workers, or any long-running PHP process.
+Useful for development servers, workers, or any long-running PHP tasks.
 
 Supports debouncing to avoid redundant restarts when multiple files change at once.
 
@@ -31,6 +31,11 @@ vendor/bin/hot-reload [options] [--] <cmd>
 | `--term-timeout`   | Seconds to wait for the process to exit after `SIGTERM` before sending `SIGKILL` | `3`     |
 | `--forward-signal` | Signals to forward to the process (repeatable, e.g. `SIGUSR1` or `10`)           | none    |
 
+### Exit code
+
+`vendor/bin/hot-reload` returns the exit code of the watched command if it terminated on its own, or `0` when stopped
+via `SIGINT` or `SIGTERM`.
+
 ### Examples
 
 ```bash
@@ -49,7 +54,7 @@ vendor/bin/hot-reload --debounce=0.5 -- php server.php
 
 ## PHP API
 
-You can use `hotReload()` directly in PHP instead of the CLI binary:
+You can use `hotReload()` directly in PHP instead of the bin script:
 
 ```php
 use Amp\Cancellation;
@@ -76,8 +81,18 @@ hotReload(
 );
 ```
 
-`$cancellation` is cancelled when files change or when `hotReload()` itself is cancelled — subscribe to it to stop the
-process gracefully.
+`$termination` is cancelled when files change or when `hotReload()` itself is cancelled — subscribe to it to stop the
+task gracefully.
+
+### TransparentProcess
+
+Use [`TransparentProcess::start()`](src/HotReload/TransparentProcess.php) to run an external command with full TTY transparency:
+- stdin/stdout/stderr are inherited
+- specified signals are forwarded
+- the process is terminated gracefully via `SIGTERM`
+- `SIGKILL` is dispatched after a timeout.
+
+See [`bin/hot-reload`](bin/hot-reload) for a real-world usage example.
 
 ## Roadmap
 

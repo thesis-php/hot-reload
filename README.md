@@ -59,11 +59,12 @@ You can use `hotReload()` directly in PHP instead of the bin script:
 ```php
 use Amp\Cancellation;
 use Amp\Http\Server\SocketHttpServer;
+use function Amp\ByteStream\getStdout;
 use function Amp\trapSignal;
 use function Thesis\hotReload;
 
 hotReload(
-    files: __DIR__ . '/path/to/src',
+    files: __DIR__,
     task: static function (Cancellation $termination): void {
         $server = SocketHttpServer::createForDirectAccess(/** ... */);
 
@@ -77,7 +78,9 @@ hotReload(
 
         $server->stop();
     },
-    debounce: 0.2,
+    onReload: static function (): void {
+        getStdout()->write("\nFiles changed, reloading server...\n\n");
+    },
 );
 ```
 

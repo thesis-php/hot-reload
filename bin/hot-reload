@@ -12,6 +12,7 @@ use Amp\SignalException;
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Thesis\HotReload\Files;
 use Thesis\HotReload\TransparentProcess;
 
@@ -45,6 +46,7 @@ new class extends SingleCommandApplication {
      * @return non-negative-int
      */
     public function __invoke(
+        SymfonyStyle $io,
         #[Argument(description: 'Command to run')]
         array $cmd,
         #[Option(description: 'Paths to watch', name: 'path')]
@@ -77,6 +79,9 @@ new class extends SingleCommandApplication {
                 ),
                 debounce: $debounce,
                 cancellation: new SignalCancellation([SIGINT, SIGTERM]),
+                onReload: static function () use ($io): void {
+                    $io->info('Files changed, reloading...');
+                },
             );
         } catch (CancelledException $exception) {
             $previous = $exception->getPrevious();

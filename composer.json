@@ -21,9 +21,8 @@
         "php": "^8.4",
         "ext-pcntl": "*",
         "amphp/amp": "^3.0",
-        "amphp/byte-stream": "^2.1",
         "revolt/event-loop": "^1.0",
-        "symfony/console": "^8.0",
+        "symfony/console": "^7.0 || ^8.0",
         "thesis/exceptionally": "^0.3.0"
     },
     "require-dev": {

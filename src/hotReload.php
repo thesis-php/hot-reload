@@ -15,7 +15,6 @@ use Thesis\HotReload\ChangeDetector\FileMtimePoller;
 use Thesis\HotReload\Files;
 use Thesis\HotReload\Internal\FilesChanged;
 use function Amp\async;
-use function Amp\ByteStream\getStderr;
 use function Thesis\HotReload\Internal\debounce;
 
 /**
@@ -25,6 +24,7 @@ use function Thesis\HotReload\Internal\debounce;
  * @param string|non-empty-list<string>|Files $files
  * @param callable(Cancellation): T $task Cancellation is cancelled either when file changes are detected (task will be restarted)
  *                                        or when the outer $cancellation is triggered (task will not be restarted)
+ * @param ?callable(): void $onReload
  * @return T
  * @throws CancelledException
  */
@@ -33,6 +33,7 @@ function hotReload(
     callable $task,
     float $debounce = 0.1,
     Cancellation $cancellation = new NullCancellation(),
+    ?callable $onReload = null,
     ChangeDetector $changeDetector = new FileMtimePoller(),
 ): mixed {
     $files = match (true) {
@@ -54,8 +55,10 @@ function hotReload(
 
         $id = $changeDetector->onChanged(
             files: $files,
-            listener: debounce(static function () use ($cancel): void {
-                getStderr()->write("\n\033[33m  ➜ Files changed, reloading...\033[0m\n\n");
+            listener: debounce(static function () use ($cancel, $onReload): void {
+                if ($onReload !== null) {
+                    $onReload();
+                }
 
                 $cancel->cancel(new FilesChanged());
             }, $debounce),

@@ -28,7 +28,7 @@ vendor/bin/hot-reload [options] [--] <cmd>
 | `--ext`            | File extensions to watch (repeatable; if none, all are watched)                  | none    |
 | `--exclude`        | Patterns to exclude (repeatable, e.g. `*.generated.php`)                         | none    |
 | `--debounce`       | Delay in seconds before restarting after a change                                | `0.1`   |
-| `--term-timeout`   | Seconds to wait for the process to exit after `SIGTERM` before sending `SIGKILL` | `10`    |
+| `--term-timeout`   | Seconds to wait for the process to exit after `SIGTERM` before sending `SIGKILL` | `3`     |
 | `--forward-signal` | Signals to forward to the process (repeatable, e.g. `SIGUSR1` or `10`)           | none    |
 
 ### Examples

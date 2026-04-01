@@ -26,7 +26,7 @@ final class TransparentProcess
     public static function start(
         array $command,
         Cancellation $termination,
-        float $terminationTimeout = 10,
+        float $terminationTimeout = 3,
         array $forwardSignals = [],
     ): int {
         /** @var DeferredFuture<non-negative-int> */

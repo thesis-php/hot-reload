@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **BC break:** `$process` parameter of `hotReload()` renamed to `$task`
+- **BC break:** Default `--term-timeout` changed from `10s` to `3s`
 
 ## [0.3.1] - 2026-03-31
 

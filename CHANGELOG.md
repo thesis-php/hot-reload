@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BC break:** `$process` parameter of `hotReload()` renamed to `$task`
 - **BC break:** `bin/hot-reload` no longer forwards any signals by default; use `--forward-signal` to opt in
 - **BC break:** Default `--term-timeout` changed from `10s` to `3s`
+- Require `thesis/exceptionally` `^0.3`
+- Require `symfony/console` `^7.0 || ^8.0`
 
 ## [0.3.1] - 2026-03-31
 

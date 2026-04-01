@@ -26,6 +26,7 @@ use function Thesis\HotReload\Internal\debounce;
  * @param callable(Cancellation): T $process Cancellation is cancelled either when file changes are detected (process will be restarted)
  *                                           or when the outer $cancellation is triggered (process will not be restarted)
  * @return T
+ * @throws CancelledException
  */
 function hotReload(
     string|array|Files $files,
@@ -43,11 +44,13 @@ function hotReload(
     while (true) {
         $cancel = new DeferredCancellation();
 
-        /** @var Future<T> */
-        $run = async(static fn() => $process(new CompositeCancellation(
+        $termination = new CompositeCancellation(
             $cancellation,
             $cancel->getCancellation(),
-        )));
+        );
+
+        /** @var Future<T> */
+        $run = async(static fn() => $process($termination));
 
         $id = $changeDetector->onChanged(
             files: $files,
@@ -59,7 +62,7 @@ function hotReload(
         );
 
         try {
-            return $run->await($cancellation);
+            return $run->await($termination);
         } catch (CancelledException $exception) {
             if ($exception->getPrevious() instanceof FilesChanged) {
                 continue;

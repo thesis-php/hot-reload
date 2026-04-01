@@ -6,6 +6,9 @@ declare(strict_types=1);
 namespace Thesis;
 
 use Amp\Cancellation;
+use Amp\CancelledException;
+use Amp\SignalCancellation;
+use Amp\SignalException;
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
@@ -54,18 +57,29 @@ new class extends SingleCommandApplication {
         #[Option(description: 'Termination timeout in seconds')]
         float $termTimeout = 10,
     ): int {
-        return hotReload(
-            files: new Files(
-                paths: $paths,
-                extensions: $extensions,
-                excludes: $excludes,
-            ),
-            process: static fn(Cancellation $termination) => TtyProcess::start(
-                command: $cmd,
-                termination: $termination,
-                terminationTimeout: $termTimeout,
-            ),
-            debounce: $debounce,
-        );
+        try {
+            return hotReload(
+                files: new Files(
+                    paths: $paths,
+                    extensions: $extensions,
+                    excludes: $excludes,
+                ),
+                process: static fn(Cancellation $termination) => TtyProcess::start(
+                    command: $cmd,
+                    termination: $termination,
+                    terminationTimeout: $termTimeout,
+                ),
+                debounce: $debounce,
+                cancellation: new SignalCancellation([SIGINT, SIGTERM]),
+            );
+        } catch (CancelledException $exception) {
+            $previous = $exception->getPrevious();
+
+            if ($previous instanceof SignalException) {
+                return self::SUCCESS;
+            }
+
+            throw $exception;
+        }
     }
 }->run();

@@ -18,26 +18,16 @@ use function Thesis\exceptionally;
  */
 final class TtyProcess
 {
-    private const array FORWARDED_SIGNALS = [
-        SIGHUP,   // terminal hangup / reload config
-        SIGINT,   // Ctrl+C
-        SIGQUIT,  // Ctrl+\ (quit + core dump)
-        SIGTERM,  // graceful termination
-        SIGUSR1,  // user-defined
-        SIGUSR2,  // user-defined
-        SIGCONT,  // continue after stop
-        SIGTSTP,  // Ctrl+Z
-        SIGWINCH, // terminal resize
-    ];
-
     /**
      * @param non-empty-list<non-empty-string> $command
+     * @param list<int> $forwardedSignals
      * @return non-negative-int
      */
     public static function start(
         array $command,
         Cancellation $termination,
         float $terminationTimeout = 10,
+        array $forwardedSignals = [],
     ): int {
         /** @var DeferredFuture<non-negative-int> */
         $deferred = new DeferredFuture();
@@ -48,7 +38,7 @@ final class TtyProcess
         // Register before proc_open so SIGCHLD cannot slip through between the
         // process start and handler registration. $process is captured by
         // reference and filled in right after proc_open.
-        $callbackId = EventLoop::onSignal(SIGCHLD, static function () use ($deferred, &$process): void {
+        $stateChangeId = EventLoop::onSignal(SIGCHLD, static function () use ($deferred, &$process): void {
             if ($process === null) {
                 return;
             }
@@ -72,15 +62,21 @@ final class TtyProcess
                 descriptor_spec: [STDIN, STDOUT, STDERR],
                 pipes: $_,
             )),
-            callbackIds: [$callbackId],
+            callbackIds: [$stateChangeId],
         );
 
-        foreach (self::FORWARDED_SIGNALS as $signal) {
-            $process->callbackIds[] = EventLoop::onSignal($signal, static fn() => $process->dispatchSignal($signal));
+        $cancelOnTerminate = [];
+
+        foreach ($forwardedSignals as $signal) {
+            $signalId = EventLoop::onSignal($signal, static fn() => $process->dispatchSignal($signal));
+            $process->callbackIds[] = $signalId;
+            $cancelOnTerminate[] = $signalId;
         }
 
         $terminationId = $termination->subscribe(
-            static function (CancelledException $exception) use ($deferred, $process, $terminationTimeout): void {
+            static function (CancelledException $exception) use ($deferred, $process, $cancelOnTerminate, $terminationTimeout): void {
+                array_walk($cancelOnTerminate, EventLoop::cancel(...));
+
                 $process->dispatchSignal(SIGTERM);
 
                 $process->callbackIds[] = EventLoop::delay($terminationTimeout, static function () use ($process): void {
@@ -104,7 +100,7 @@ final class TtyProcess
 
     /**
      * @param resource $process
-     * @param list<string> $callbackIds
+     * @param non-empty-list<string> $callbackIds
      */
     private function __construct(
         private readonly mixed $process,

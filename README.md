@@ -61,16 +61,16 @@ use function Thesis\hotReload;
 
 hotReload(
     files: __DIR__ . '/path/to/src',
-    process: static function (Cancellation $cancellation): void {
+    process: static function (Cancellation $termination): void {
         $server = SocketHttpServer::createForDirectAccess(/** ... */);
 
-        $cancellation->subscribe($server->stop(...));
+        $termination->subscribe($server->stop(...));
 
         $server->expose(/** ... */);
 
         $server->start(/** ... */);
 
-        trapSignal([SIGINT, SIGTERM], cancellation: $cancellation);
+        trapSignal([SIGINT, SIGTERM], cancellation: $termination);
 
         $server->stop();
     },

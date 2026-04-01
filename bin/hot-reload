@@ -64,7 +64,7 @@ new class extends SingleCommandApplication {
                     extensions: $extensions,
                     excludes: $excludes,
                 ),
-                process: static fn(Cancellation $termination) => TtyProcess::start(
+                task: static fn(Cancellation $termination) => TtyProcess::start(
                     command: $cmd,
                     termination: $termination,
                     terminationTimeout: $termTimeout,

@@ -23,14 +23,14 @@ use function Thesis\HotReload\Internal\debounce;
  *
  * @template T
  * @param string|non-empty-list<string>|Files $files
- * @param callable(Cancellation): T $process Cancellation is cancelled either when file changes are detected (process will be restarted)
- *                                           or when the outer $cancellation is triggered (process will not be restarted)
+ * @param callable(Cancellation): T $task Cancellation is cancelled either when file changes are detected (task will be restarted)
+ *                                        or when the outer $cancellation is triggered (task will not be restarted)
  * @return T
  * @throws CancelledException
  */
 function hotReload(
     string|array|Files $files,
-    callable $process,
+    callable $task,
     float $debounce = 0.1,
     Cancellation $cancellation = new NullCancellation(),
     ChangeDetector $changeDetector = new FileMtimePoller(),
@@ -50,7 +50,7 @@ function hotReload(
         );
 
         /** @var Future<T> */
-        $run = async(static fn() => $process($termination));
+        $run = async(static fn() => $task($termination));
 
         $id = $changeDetector->onChanged(
             files: $files,

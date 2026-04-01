@@ -61,7 +61,7 @@ use function Thesis\hotReload;
 
 hotReload(
     files: __DIR__ . '/path/to/src',
-    process: static function (Cancellation $termination): void {
+    task: static function (Cancellation $termination): void {
         $server = SocketHttpServer::createForDirectAccess(/** ... */);
 
         $termination->subscribe($server->stop(...));

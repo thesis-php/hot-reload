@@ -20,14 +20,14 @@ final class TransparentProcess
 {
     /**
      * @param non-empty-list<non-empty-string> $command
-     * @param list<int> $forwardedSignals
+     * @param list<int> $forwardSignals
      * @return non-negative-int
      */
     public static function start(
         array $command,
         Cancellation $termination,
         float $terminationTimeout = 10,
-        array $forwardedSignals = [],
+        array $forwardSignals = [],
     ): int {
         /** @var DeferredFuture<non-negative-int> */
         $deferred = new DeferredFuture();
@@ -67,7 +67,7 @@ final class TransparentProcess
 
         $cancelOnTerminate = [];
 
-        foreach ($forwardedSignals as $signal) {
+        foreach ($forwardSignals as $signal) {
             $signalId = EventLoop::onSignal($signal, static fn() => $process->dispatchSignal($signal));
             $process->callbackIds[] = $signalId;
             $cancelOnTerminate[] = $signalId;

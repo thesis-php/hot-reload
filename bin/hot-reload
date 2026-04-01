@@ -41,6 +41,7 @@ new class extends SingleCommandApplication {
      * @param non-empty-list<string> $paths
      * @param ?non-empty-list<string> $extensions
      * @param list<string> $excludes
+     * @param list<string> $forwardSignals
      * @return non-negative-int
      */
     public function __invoke(
@@ -56,7 +57,11 @@ new class extends SingleCommandApplication {
         float $debounce = 0.1,
         #[Option(description: 'Termination timeout in seconds')]
         float $termTimeout = 10,
+        #[Option(description: 'Signals to forward to the process (e.g. SIGUSR1 or 10)', name: 'forward-signal')]
+        array $forwardSignals = [],
     ): int {
+        $forwardSignals = self::resolveSignals($forwardSignals);
+
         try {
             return hotReload(
                 files: new Files(
@@ -68,6 +73,7 @@ new class extends SingleCommandApplication {
                     command: $cmd,
                     termination: $termination,
                     terminationTimeout: $termTimeout,
+                    forwardSignals: $forwardSignals,
                 ),
                 debounce: $debounce,
                 cancellation: new SignalCancellation([SIGINT, SIGTERM]),
@@ -81,5 +87,29 @@ new class extends SingleCommandApplication {
 
             throw $exception;
         }
+    }
+
+    /**
+     * @param list<string> $names
+     * @return list<int>
+     */
+    private static function resolveSignals(array $names): array
+    {
+        return array_map(
+            static function (string $name) {
+                if (preg_match('/^\d+$/', $name) === 1) {
+                    return (int) $name;
+                }
+
+                $signal = @\constant($name);
+
+                if (!\is_int($signal)) {
+                    throw new \InvalidArgumentException("Invalid signal `{$name}`");
+                }
+
+                return $signal;
+            },
+            $names,
+        );
     }
 }->run();

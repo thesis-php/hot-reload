@@ -22,13 +22,14 @@ vendor/bin/hot-reload [options] [--] <cmd>
 
 ### Options
 
-| Option           | Description                                                                      | Default |
-|------------------|----------------------------------------------------------------------------------|---------|
-| `--path`         | Paths to watch (repeatable)                                                      | `src`   |
-| `--ext`          | File extensions to watch (repeatable; if none, all are watched)                  | none    |
-| `--exclude`      | Patterns to exclude (repeatable, e.g. `*.generated.php`)                         | none    |
-| `--debounce`     | Delay in seconds before restarting after a change                                | `0.1`   |
-| `--term-timeout` | Seconds to wait for the process to exit after `SIGTERM` before sending `SIGKILL` | `10`    |
+| Option             | Description                                                                      | Default |
+|--------------------|----------------------------------------------------------------------------------|---------|
+| `--path`           | Paths to watch (repeatable)                                                      | `src`   |
+| `--ext`            | File extensions to watch (repeatable; if none, all are watched)                  | none    |
+| `--exclude`        | Patterns to exclude (repeatable, e.g. `*.generated.php`)                         | none    |
+| `--debounce`       | Delay in seconds before restarting after a change                                | `0.1`   |
+| `--term-timeout`   | Seconds to wait for the process to exit after `SIGTERM` before sending `SIGKILL` | `10`    |
+| `--forward-signal` | Signals to forward to the process (repeatable, e.g. `SIGUSR1` or `10`)           | none    |
 
 ### Examples
 
@@ -44,9 +45,6 @@ vendor/bin/hot-reload --path=src --ext=php --exclude='*.generated.php' -- php se
 
 # Increase debounce delay (useful when many files change at once)
 vendor/bin/hot-reload --debounce=0.5 -- php server.php
-
-# Allow more time for graceful shutdown before forcing SIGKILL
-vendor/bin/hot-reload --termination-timeout=30 -- php server.php
 ```
 
 ## PHP API

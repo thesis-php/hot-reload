@@ -13,7 +13,7 @@ use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
 use Thesis\HotReload\Files;
-use Thesis\HotReload\Internal\TtyProcess;
+use Thesis\HotReload\TransparentProcess;
 
 (static function (): void {
     $autoloaders = array_filter([
@@ -64,7 +64,7 @@ new class extends SingleCommandApplication {
                     extensions: $extensions,
                     excludes: $excludes,
                 ),
-                task: static fn(Cancellation $termination) => TtyProcess::start(
+                task: static fn(Cancellation $termination) => TransparentProcess::start(
                     command: $cmd,
                     termination: $termination,
                     terminationTimeout: $termTimeout,

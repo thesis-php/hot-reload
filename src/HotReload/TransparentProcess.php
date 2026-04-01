@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Thesis\HotReload\Internal;
+namespace Thesis\HotReload;
 
 use Amp\Cancellation;
 use Amp\CancelledException;
@@ -12,11 +12,11 @@ use function Thesis\exceptionally;
 
 /**
  * Runs a command transparently: inherits stdin/stdout/stderr from the parent
- * process and forwards signals to the child.
+ * process and optionally forwards signals to the child.
  *
- * @internal
+ * @api
  */
-final class TtyProcess
+final class TransparentProcess
 {
     /**
      * @param non-empty-list<non-empty-string> $command

@@ -13,6 +13,8 @@ use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\SingleCommandApplication;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Thesis\HotReload\ChangeDetector\FileMtimePoller;
+use Thesis\HotReload\ChangeDetector\InotifyChangeDetector;
 use Thesis\HotReload\Files;
 use Thesis\HotReload\TransparentProcess;
 
@@ -81,6 +83,10 @@ new class extends SingleCommandApplication {
                 cancellation: new SignalCancellation([SIGINT, SIGTERM]),
                 onReload: static function () use ($io): void {
                     $io->info('Files changed, reloading...');
+                },
+                changeDetector: match (true) {
+                    \extension_loaded('inotify') => new InotifyChangeDetector(),
+                    default => new FileMtimePoller(),
                 },
             );
         } catch (CancelledException $exception) {
